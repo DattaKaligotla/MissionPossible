@@ -44,30 +44,35 @@ def turn_ang(end, target): #figures out angle between two points
     want_deg = heading_calc(want_dx, want_deg) #angle want to go
     return want_deg
 
+def stop():
+    leftm.run(Adafruit_MotorHAT.RELEASE)
+    rightm.run(Adafruit_MotorHAT.RELEASE)
 
 def forward(time_length):
     leftm.run(Adafruit_MotorHAT.FORWARD)
     rightm.run(Adafruit_MotorHAT.FORWARD)
     time.sleep(time_length)
+    stop()
     
 def backward(time_length):
     leftm.run(Adafruit_MotorHAT.BACKWARD)
     rightm.run(Adafruit_MotorHAT.BACKWARD)
     time.sleep(time_length)
+    stop()
 
 def right(deg):
     leftm.run(Adafruit_MotorHAT.FORWARD)
     rightm.run(Adafruit_MotorHAT.BACKWARD)
     time.sleep((deg/90) * SEC_TO_90_DEG)
+    stop()
 
 def left(deg):
     leftm.run(Adafruit_MotorHAT.BACKWARD)
     rightm.run(Adafruit_MotorHAT.FORWARD)
     time.sleep((deg/90) * SEC_TO_90_DEG)
+    stop()
     
-def stop():
-    leftm.run(Adafruit_MotorHAT.RELEASE)
-    rightm.run(Adafruit_MotorHAT.RELEASE)
+
 
 start=getCord()
 #continue the following loop until your x and y are both within "delta" of the target
@@ -78,6 +83,9 @@ while not(target[0] - length_delta <= start[0] <= target[0] + length_delta) or n
     time.sleep(6)
     end=getCord()#not yet defined
     ang = (turn_ang(end,target) - turn_ang(start,end)) % 360 #makes sures no negative angles
-    left(ang) #how much to turn by
+    if ang > 180:
+        right(360-ang)
+    if ang <= 180:
+        left(ang)
     start=getCord()#not yet defined
 stop()
