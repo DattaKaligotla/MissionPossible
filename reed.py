@@ -1,7 +1,4 @@
-fo = open("output.txt", "w")
-fo.write("hi\npizza")
-fo.close()
-'''
+
 ReedPin = 13
 
 
@@ -17,4 +14,3 @@ def Print(x):
 		print '    *   Detected Magnetic Material!   *'
 		print '    ***********************************'
 
-'''
