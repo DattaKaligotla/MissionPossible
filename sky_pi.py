@@ -25,7 +25,7 @@ def forward(t):
     time.sleep(t)
 
 def calcAngle(x, y):
-    angle = math.atan(float(y)/float(x)) * 180.0 / math.pi
+    angle = math.degrees(math.atan(float(y)/float(x)))
     if x == 0:
         if y >= 0:
             return 90
