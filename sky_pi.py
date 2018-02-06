@@ -1,91 +1,80 @@
-
-from Adafruit_MotorHAT import Adafruit_MotorHAT, Adafruit_DCMotor
-import time
-import atexit
-import math
-import urllib2
-
-SEC_TO_90_DEG=1.74 #amount of seconds it takes for the rover to turn 90 degrees *NOT ACTUAL VALUE
-time_delta=4 #time in seconds for the rover to update its current location *NOT ACTUAL VALUE
-length_delta=100 #how close the rover has to be of the desingnated point *NOT ACTUAL VALUE
-i1=int(input("X: "))
-i2=int(input("Y: "))
-target=(i1,i2) #desired cordinated location *NOT ACTUAL VALUE
-
+#SKYPISKYPISKYPI SKYPI SKYPI SKYPI SKYPI SKYPI SKYPI SKYPI SKYPI SKYPI SKYPI SKYPI SKYPI SKYPI SKYPI SKYPI SKYPI SKYPI SKYPI SKYPI SKYPI SKYPI SKYPI SKYPI SKYPI SKYPI SKYPI  
+ 
 rover = Adafruit_MotorHAT(addr=0x60)
 
-leftm = rover.getMotor(1)#left motor
+leftm=rover.getMotor(1)#left motor
 leftm.setSpeed(255)
 
-rightm = rover.getMotor(2)#right motor
+rightm=rover.getMotor(2)#right motor
 rightm.setSpeed(255)
 
-def getCord():
-    cords=urllib2.urlopen("http://10.144.7.184/coord.txt").read()
-    clist=cords.split(",")
-    return (int(clist[0]),int(clist[1]))
+FULL_TURN_TIME = 3.04 # TIME TAKES TO TURN 360, IN SECONDS
+DIST_THRESHOLD = 200
 
-def heading_calc(dx, deg): #makes sure angle in 360 degree domain
-    if dx < 0:
-        return 180 + deg
-    if dx > 0:
-        return 360 + deg
+#SKYPI/NAV
+def getGPS():
+    try:
+        data = urllib2.urlopen("http://10.144.7.184/coord.txt").read()
+        return int(data.split(",")[0]), int(data.split(",")[1])
+    except:
+        print("Could not access coordinates...")
+    
+def forward(t):
+    leftm.run(Adafruit_MotorHAT.FORWARD)
+    rightm.run(Adafruit_MotorHAT.FORWARD)
+    time.sleep(t)
 
-def turn_ang(end, target): #figures out angle between two points
-    want_dx = target[0] - end[0]
-    want_dy = target[1] - end[1]
-    if want_dx == 0 and want_dx > 0: #if 90 or 270 degrees
-        return 90
-    elif want_dx == 0 and want_dx < 0:
-        return 270
+def calcAngle(x, y):
+    angle = math.atan(float(y)/float(x)) * 180.0 / math.pi
+    if x == 0:
+        if y >= 0:
+            return 90
+        else:
+            return 270
+    elif x > 0:
+        return angle % 360
     else:
-        want_tan = want_dy/want_dx
-    want_deg = math.degrees(math.atan(want_tan))
-    want_deg = heading_calc(want_dx, want_deg) #angle want to go
-    return want_deg
+        return (180+angle) % 360
+
+def angleTime(angle):
+    return FULL_TURN_TIME * float(angle) / 360.0
+
+def turn(direction, angle):
+    direction = direction.upper()
+    if direction[0] == "L":
+        leftm.run(Adafruit_MotorHAT.BACKWARD)
+        rightm.run(Adafruit_MotorHAT.FORWARD)
+        time.sleep(angleTime(angle))
+    else:
+        leftm.run(Adafruit_MotorHAT.FORWARD)
+        rightm.run(Adafruit_MotorHAT.BACKWARD)
+        time.sleep(angleTime(angle))
+    stop()
 
 def stop():
     leftm.run(Adafruit_MotorHAT.RELEASE)
     rightm.run(Adafruit_MotorHAT.RELEASE)
 
-def forward(time_length):
-    leftm.run(Adafruit_MotorHAT.FORWARD)
-    rightm.run(Adafruit_MotorHAT.FORWARD)
-    time.sleep(time_length)
-    stop()
-    
-def backward(time_length):
-    leftm.run(Adafruit_MotorHAT.BACKWARD)
-    rightm.run(Adafruit_MotorHAT.BACKWARD)
-    time.sleep(time_length)
+
+def goToPoint(x, y): #to go to one point
+    curX, curY = getGPS() # get current position
+    while not (x - DIST_THRESHOLD <= curX <= x + DIST_THRESHOLD) or not(y - DIST_THRESHOLD <= curY <= y + DIST_THRESHOLD):
+        curX, curY = getGPS() # get current position
+        print("currentPosition:", curX, curY)
+        forward(3) # move forwards for 3 seconds
+        stop()
+        time.sleep(5)
+        nextX, nextY = getGPS() # get current position (again)
+        print("nextCoords: ", nextX, nextY)
+        difX = nextX - curX
+        difY = nextY - curY
+        headAngle = calcAngle(difX, difY) #gets the current heading
+        print("Heading: ", headAngle)
+        targetAngle = calcAngle(x - curX, y - curY) #angle ya wannabe
+        moveAngle = (targetAngle - headAngle) % 360 #turn to get correct angle
+        print("Turning: ", moveAngle)
+        turn("LEFT", moveAngle) #turns left
+        forward(3)
     stop()
 
-def right(deg):
-    leftm.run(Adafruit_MotorHAT.FORWARD)
-    rightm.run(Adafruit_MotorHAT.BACKWARD)
-    time.sleep((deg/90) * SEC_TO_90_DEG)
-    stop()
-
-def left(deg):
-    leftm.run(Adafruit_MotorHAT.BACKWARD)
-    rightm.run(Adafruit_MotorHAT.FORWARD)
-    time.sleep((deg/90) * SEC_TO_90_DEG)
-    stop()
-    
-
-
-start=getCord()
-#continue the following loop until your x and y are both within "delta" of the target
-while not(target[0] - length_delta <= start[0] <= target[0] + length_delta) or not(target[1] - length_delta <= start[1] <= target[1] + length_delta):
-    print(start)
-    forward(time_delta)
-    stop()
-    time.sleep(6)
-    end=getCord()#not yet defined
-    ang = (turn_ang(end,target) - turn_ang(start,end)) % 360 #makes sures no negative angles
-    if ang > 180:
-        right(360-ang)
-    if ang <= 180:
-        left(ang)
-    start=getCord()#not yet defined
-stop()
+goToPoint(2370,1900)
