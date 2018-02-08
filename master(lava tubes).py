@@ -121,20 +121,10 @@ def get_temp():
 
 #PHOTO
 ser=serial.Serial("/dev/ttyACM0",9600)  #change ACM number as found from ls /dev/tty/ACM*
-ser.baudrate=9600
 def get_ldr():
-    GPIO.output(pin,GPIO.HIGH)  
-    time.sleep(1)  
-    GPIO.output(pin,GPIO.LOW)  
-    time.sleep(1)  
-    return
-
-    GPIO.setmode(GPIO.BOARD)
-    GPIO.setup(11, GPIO.OUT)
-    while True:
-
-        read_ser=ser.readline()
-        print(read_ser)
+    outputs = ser.read(ser.inWaiting()).split("\n") #gets all printed in serial
+    ldr = outputs[-2] #gets the last value
+    return ldr
 
 #ACCEL
 sensor = mpu6050(0x68)
