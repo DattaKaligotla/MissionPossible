@@ -39,6 +39,20 @@ def forward(t):
     leftm.run(Adafruit_MotorHAT.FORWARD)
     rightm.run(Adafruit_MotorHAT.FORWARD)
     time.sleep(t)
+def backward(time_length):
+    leftm.run(Adafruit_MotorHAT.BACKWARD)
+    rightm.run(Adafruit_MotorHAT.BACKWARD)
+    time.sleep(time_length)
+
+def right(radians):
+    leftm.run(Adafruit_MotorHAT.FORWARD)
+    rightm.run(Adafruit_MotorHAT.BACKWARD)
+    time.sleep(radians*SEC_TO_RADIAN)
+
+def left(radians):
+    leftm.run(Adafruit_MotorHAT.BACKWARD)
+    rightm.run(Adafruit_MotorHAT.FORWARD)
+    time.sleep(radians*SEC_TO_RADIAN)
 
 def calcAngle(x, y):
     angle = math.degrees(math.atan(float(y)/float(x)))
@@ -72,9 +86,17 @@ def stop():
     rightm.run(Adafruit_MotorHAT.RELEASE)
 
 
+ser=serial.Serial("/dev/ttyACM0",9600)  #change ACM number as found from ls /dev/tty/ACM*
+def get_ldr():
+    outputs = ser.read(ser.inWaiting()).split("\n") #gets all printed in serial
+    ldr = outputs[-2] #gets the last value
+    return ldr
+
 def goToPoint(x, y): #to go to one point
     curX, curY = getGPS() # get current position
     while not (x - DIST_THRESHOLD <= curX <= x + DIST_THRESHOLD) or not(y - DIST_THRESHOLD <= curY <= y + DIST_THRESHOLD):
+        if int(get_lrd()) <20:
+            backward(2)
         curX, curY = getGPS() # get current position
         print("currentPosition:", curX, curY)
         forward(3) # move forwards for 3 seconds
@@ -120,11 +142,7 @@ def get_temp():
         return temp_c, temp_f
 
 #PHOTO
-ser=serial.Serial("/dev/ttyACM0",9600)  #change ACM number as found from ls /dev/tty/ACM*
-def get_ldr():
-    outputs = ser.read(ser.inWaiting()).split("\n") #gets all printed in serial
-    ldr = outputs[-2] #gets the last value
-    return ldr
+
 
 #ACCEL
 sensor = mpu6050(0x68)
