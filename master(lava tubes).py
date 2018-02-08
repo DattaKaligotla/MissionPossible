@@ -97,6 +97,7 @@ def goToPoint(x, y): #to go to one point
     while not (x - DIST_THRESHOLD <= curX <= x + DIST_THRESHOLD) or not(y - DIST_THRESHOLD <= curY <= y + DIST_THRESHOLD):
         if int(get_lrd()) <20:
             backward(2)
+            left(1)
         curX, curY = getGPS() # get current position
         print("currentPosition:", curX, curY)
         forward(3) # move forwards for 3 seconds
